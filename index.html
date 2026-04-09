@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Strait of Hormuz Ship Game</title>
+  <style>
+    body {
+      margin: 0;
+      background: #0b1320;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      font-family: Arial, sans-serif;
+    }
+
+    canvas {
+      border: 2px solid #222;
+      background: #0d1a2e;
+      display: block;
+    }
+  </style>
+</head>
+<body>
+  <canvas id="gameCanvas" width="1000" height="700"></canvas>
+
+  <script>
+    const canvas = document.getElementById("gameCanvas");
+    const ctx = canvas.getContext("2d");
+
+    let windowWidth = 1000;
+    let windowHeight = 700;
+
+    let shipX = 120.0;
+    let shipY = 350.0;
+    let shipW = 40.0;
+    let shipH = 20.0;
+    let shipSpeed = 12.0;
+
+    let gameOver = false;
+    let gameStarted = false;
+    let score = 0;
+    let frameCounter = 0;
+
+    let missiles = [];
+
+    let upKey = false, downKey = false, leftKey = false, rightKey = false;
+
+    function drawText(x, y, text, font = "18px Arial", color = "white", align = "left") {
+      ctx.fillStyle = color;
+      ctx.font = font;
+      ctx.textAlign = align;
+      ctx.fillText(text, x, y);
+    }
+
+    function drawCircle(cx, cy, r, color) {
+      ctx.beginPath();
+      ctx.arc(cx, cy, r, 0, Math.PI * 2);
+      ctx.fillStyle = color;
+      ctx.fill();
+    }
+
+    function drawMap() {
+      // Sea
+      ctx.fillStyle = "rgb(31, 107, 184)";
+      ctx.fillRect(0, 0, windowWidth, windowHeight);
+
+      // Northern land
+      ctx.fillStyle = "rgb(191, 173, 115)";
+      ctx.beginPath();
+      ctx.moveTo(0, 120);
+      ctx.lineTo(120, 80);
+      ctx.lineTo(260, 60);
+      ctx.lineTo(430, 90);
+      ctx.lineTo(550, 140);
+      ctx.lineTo(650, 160);
+      ctx.lineTo(770, 140);
+      ctx.lineTo(900, 90);
+      ctx.lineTo(1000, 50);
+      ctx.lineTo(1000, 0);
+      ctx.lineTo(0, 0);
+      ctx.closePath();
+      ctx.fill();
+
+      // Southern land
+      ctx.beginPath();
+      ctx.moveTo(0, 700);
+      ctx.lineTo(180, 650);
+      ctx.lineTo(310, 615);
+      ctx.lineTo(430, 580);
+      ctx.lineTo(550, 555);
+      ctx.lineTo(670, 570);
+      ctx.lineTo(800, 605);
+      ctx.lineTo(920, 640);
+      ctx.lineTo(1000, 665);
+      ctx.lineTo(1000, 700);
+      ctx.closePath();
+      ctx.fill();
+
+      // Narrow strait guide lines
+      ctx.strokeStyle = "rgb(230, 242, 255)";
+      ctx.lineWidth = 2;
+
+      ctx.beginPath();
+      ctx.moveTo(0, 170);
+      ctx.lineTo(windowWidth, 170);
+      ctx.stroke();
+
+      ctx.beginPath();
+      ctx.moveTo(0, 530);
+      ctx.lineTo(windowWidth, 530);
+      ctx.stroke();
+
+      // Title
+      drawText(500, 35, "Strait of Hormuz Escape", "28px Times New Roman", "white", "center");
+    }
+
+    function drawShip() {
+      ctx.save();
+      ctx.translate(shipX, shipY);
+
+      // Ship body
+      ctx.fillStyle = "rgb(217, 217, 230)";
+      ctx.beginPath();
+      ctx.moveTo(-shipW / 2, -shipH / 2);
+      ctx.lineTo(shipW / 2, -shipH / 2);
+      ctx.lineTo(shipW / 2 + 15, 0);
+      ctx.lineTo(shipW / 2, shipH / 2);
+      ctx.lineTo(-shipW / 2, shipH / 2);
+      ctx.lineTo(-shipW / 2 - 10, 0);
+      ctx.closePath();
+      ctx.fill();
+
+      // Deck
+      ctx.fillStyle = "rgb(77, 77, 89)";
+      ctx.fillRect(-8, -5, 16, 13);
+
+      // Front window
+      ctx.fillStyle = "rgb(51, 179, 230)";
+      ctx.fillRect(0, 0, 10, 6);
+
+      ctx.restore();
+    }
+
+    function drawMissiles() {
+      for (let m of missiles) {
+        ctx.fillStyle = "rgb(230, 26, 26)";
+        ctx.beginPath();
+        ctx.moveTo(m.x + 14, m.y);
+        ctx.lineTo(m.x - 6, m.y + 5);
+        ctx.lineTo(m.x - 6, m.y - 5);
+        ctx.closePath();
+        ctx.fill();
+
+        ctx.fillStyle = "rgb(179, 179, 179)";
+        ctx.fillRect(m.x - 10, m.y - 4, 4, 8);
+
+        ctx.fillStyle = "rgb(255, 128, 0)";
+        ctx.beginPath();
+        ctx.moveTo(m.x - 10, m.y);
+        ctx.lineTo(m.x - 18, m.y + 5);
+        ctx.lineTo(m.x - 18, m.y - 5);
+        ctx.closePath();
+        ctx.fill();
+      }
+    }
+
+    function checkCollision(ax, ay, aw, ah, bx, by, bw, bh) {
+      return (Math.abs(ax - bx) * 2 < (aw + bw)) &&
+             (Math.abs(ay - by) * 2 < (ah + bh));
+    }
+
+    function spawnMissile() {
+      let m = {
+        x: windowWidth + 30,
+        y: 190 + Math.floor(Math.random() * 320),
+        speed: 6 + Math.floor(Math.random() * 5)
+      };
+      missiles.push(m);
+    }
+
+    function resetGame() {
+      shipX = 120.0;
+      shipY = 350.0;
+      gameOver = false;
+      score = 0;
+      frameCounter = 0;
+      missiles = [];
+    }
+
+    function display() {
+      ctx.clearRect(0, 0, windowWidth, windowHeight);
+
+      if (!gameStarted) {
+        drawText(500, 220, "STRAIT OF HORMUZ GAME", "36px Times New Roman", "white", "center");
+        drawText(500, 300, "Press P to Play", "28px Arial", "#cccccc", "center");
+        drawText(500, 380, "Prototype by KNAPSACK SYSTEMS", "24px Arial", "#b3b3b3", "center");
+        drawText(500, 430, "Developer: Sakib Raaz", "24px Arial", "#b3b3b3", "center");
+        return;
+      }
+
+      drawMap();
+      drawShip();
+      drawMissiles();
+
+      drawText(20, 35, "Score: " + score, "24px Arial", "white");
+      drawText(20, 65, "Use Arrow Keys to move", "20px Arial", "white");
+
+      if (gameOver) {
+        drawText(500, 350, "GAME OVER", "36px Times New Roman", "rgb(255, 51, 51)", "center");
+        drawText(500, 395, "Press R to Restart", "24px Arial", "white", "center");
+      }
+    }
+
+    function update() {
+      if (gameStarted && !gameOver) {
+        if (upKey) shipY -= shipSpeed;
+        if (downKey) shipY += shipSpeed;
+        if (leftKey) shipX -= shipSpeed;
+        if (rightKey) shipX += shipSpeed;
+
+        // Boundary control
+        if (shipX < 40) shipX = 40;
+        if (shipX > windowWidth - 60) shipX = windowWidth - 60;
+        if (shipY < 185) shipY = 185;
+        if (shipY > 515) shipY = 515;
+
+        // Spawn missiles
+        frameCounter++;
+        if (frameCounter % 25 === 0) {
+          spawnMissile();
+        }
+
+        // Move missiles
+        for (let i = 0; i < missiles.length; i++) {
+          missiles[i].x -= missiles[i].speed;
+        }
+
+        // Remove missiles and add score
+        for (let i = 0; i < missiles.length; ) {
+          if (missiles[i].x < -30) {
+            missiles.splice(i, 1);
+            score++;
+          } else {
+            i++;
+          }
+        }
+
+        // Collision detection
+        for (let m of missiles) {
+          if (checkCollision(shipX, shipY, 50, 28, m.x, m.y, 28, 16)) {
+            gameOver = true;
+            break;
+          }
+        }
+      }
+
+      display();
+      requestAnimationFrame(update);
+    }
+
+    document.addEventListener("keydown", function(event) {
+      if (event.key === "ArrowUp") upKey = true;
+      if (event.key === "ArrowDown") downKey = true;
+      if (event.key === "ArrowLeft") leftKey = true;
+      if (event.key === "ArrowRight") rightKey = true;
+
+      if (event.key === "p" || event.key === "P") {
+        gameStarted = true;
+        resetGame();
+      }
+
+      if ((event.key === "r" || event.key === "R") && gameOver) {
+        resetGame();
+      }
+    });
+
+    document.addEventListener("keyup", function(event) {
+      if (event.key === "ArrowUp") upKey = false;
+      if (event.key === "ArrowDown") downKey = false;
+      if (event.key === "ArrowLeft") leftKey = false;
+      if (event.key === "ArrowRight") rightKey = false;
+    });
+
+    update();
+  </script>
+</body>
+</html>
