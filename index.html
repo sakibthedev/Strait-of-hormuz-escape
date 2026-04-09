@@ -62,11 +62,11 @@
     }
 
     function drawMap() {
-      // Sea
+      
       ctx.fillStyle = "rgb(31, 107, 184)";
       ctx.fillRect(0, 0, windowWidth, windowHeight);
 
-      // Northern land
+      
       ctx.fillStyle = "rgb(191, 173, 115)";
       ctx.beginPath();
       ctx.moveTo(0, 120);
@@ -83,7 +83,7 @@
       ctx.closePath();
       ctx.fill();
 
-      // Southern land
+      
       ctx.beginPath();
       ctx.moveTo(0, 700);
       ctx.lineTo(180, 650);
@@ -98,7 +98,7 @@
       ctx.closePath();
       ctx.fill();
 
-      // Narrow strait guide lines
+     
       ctx.strokeStyle = "rgb(230, 242, 255)";
       ctx.lineWidth = 2;
 
@@ -112,7 +112,7 @@
       ctx.lineTo(windowWidth, 530);
       ctx.stroke();
 
-      // Title
+      
       drawText(500, 35, "Strait of Hormuz Escape", "28px Times New Roman", "white", "center");
     }
 
@@ -120,7 +120,7 @@
       ctx.save();
       ctx.translate(shipX, shipY);
 
-      // Ship body
+      
       ctx.fillStyle = "rgb(217, 217, 230)";
       ctx.beginPath();
       ctx.moveTo(-shipW / 2, -shipH / 2);
@@ -132,11 +132,11 @@
       ctx.closePath();
       ctx.fill();
 
-      // Deck
+      
       ctx.fillStyle = "rgb(77, 77, 89)";
       ctx.fillRect(-8, -5, 16, 13);
 
-      // Front window
+      
       ctx.fillStyle = "rgb(51, 179, 230)";
       ctx.fillRect(0, 0, 10, 6);
 
@@ -147,9 +147,9 @@
       for (let m of missiles) {
         ctx.fillStyle = "rgb(230, 26, 26)";
         ctx.beginPath();
-        ctx.moveTo(m.x + 14, m.y);
-        ctx.lineTo(m.x - 6, m.y + 5);
-        ctx.lineTo(m.x - 6, m.y - 5);
+        ctx.moveTo(m.x - 14, m.y);   
+        ctx.lineTo(m.x + 6, m.y + 5);
+        ctx.lineTo(m.x + 6, m.y - 5);
         ctx.closePath();
         ctx.fill();
 
@@ -158,9 +158,9 @@
 
         ctx.fillStyle = "rgb(255, 128, 0)";
         ctx.beginPath();
-        ctx.moveTo(m.x - 10, m.y);
-        ctx.lineTo(m.x - 18, m.y + 5);
-        ctx.lineTo(m.x - 18, m.y - 5);
+        ctx.moveTo(m.x + 10, m.y);
+        ctx.lineTo(m.x + 18, m.y + 5);
+        ctx.lineTo(m.x + 18, m.y - 5);
         ctx.closePath();
         ctx.fill();
       }
@@ -221,24 +221,24 @@
         if (leftKey) shipX -= shipSpeed;
         if (rightKey) shipX += shipSpeed;
 
-        // Boundary control
+        
         if (shipX < 40) shipX = 40;
         if (shipX > windowWidth - 60) shipX = windowWidth - 60;
         if (shipY < 185) shipY = 185;
         if (shipY > 515) shipY = 515;
 
-        // Spawn missiles
+        
         frameCounter++;
         if (frameCounter % 25 === 0) {
           spawnMissile();
         }
 
-        // Move missiles
+       
         for (let i = 0; i < missiles.length; i++) {
           missiles[i].x -= missiles[i].speed;
         }
 
-        // Remove missiles and add score
+        
         for (let i = 0; i < missiles.length; ) {
           if (missiles[i].x < -30) {
             missiles.splice(i, 1);
@@ -248,7 +248,7 @@
           }
         }
 
-        // Collision detection
+      
         for (let m of missiles) {
           if (checkCollision(shipX, shipY, 50, 28, m.x, m.y, 28, 16)) {
             gameOver = true;
